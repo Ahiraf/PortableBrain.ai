@@ -15,3 +15,6 @@ web/data/memories.json
 # os / editor
 .DS_Store
 *.log
+
+# tooling artifacts
+.puku/

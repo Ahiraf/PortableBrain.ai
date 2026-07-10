@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { width: 320px; margin: 0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+           background: #0b0f1a; color: #e8ecf5; }
+    header { padding: 14px 16px 10px; border-bottom: 1px solid #232c40; display: flex; align-items: center; gap: 8px; }
+    header .logo { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-size: 15px;
+                   background: linear-gradient(135deg, #7c9cff, #b98bff); }
+    header h1 { font-size: 14px; margin: 0; }
+    .body { padding: 12px 16px 16px; }
+    label { font-size: 11px; color: #93a0bd; display: block; margin-bottom: 4px; }
+    input { width: 100%; background: #1a2233; border: 1px solid #232c40; color: #e8ecf5;
+            border-radius: 8px; padding: 8px 10px; font-size: 13px; outline: none; }
+    input:focus { border-color: #7c9cff; }
+    .row { display: flex; gap: 8px; margin-top: 8px; }
+    button { flex: 1; border: 0; border-radius: 8px; padding: 8px; font-weight: 700; cursor: pointer; font-size: 13px;
+             background: linear-gradient(135deg, #7c9cff, #b98bff); color: #0b0f1a; }
+    button.gh { background: transparent; color: #e8ecf5; border: 1px solid #232c40; font-weight: 600; }
+    .status { font-size: 12px; margin-top: 8px; color: #93a0bd; }
+    .status.ok { color: #3ecf8e; }
+    .status.err { color: #f0663d; }
+    .list { margin-top: 12px; }
+    .m { font-size: 12px; padding: 7px 0; border-top: 1px solid #232c40; color: #cdd5ea; }
+    .hint { font-size: 11px; color: #6c7796; margin-top: 12px; line-height: 1.5; }
+    a { color: #7c9cff; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">🧠</div>
+    <h1>PortableBrain</h1>
+  </header>
+  <div class="body">
+    <label>Backend URL</label>
+    <input id="backend" placeholder="http://localhost:3000" />
+    <label style="margin-top:10px">Access token <span style="color:#6c7796">(only if PB_TOKEN is set)</span></label>
+    <input id="token" type="password" placeholder="leave blank if not using a token" />
+    <div class="row">
+      <button id="save">Save</button>
+      <button class="gh" id="test">Test</button>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="list" id="list"></div>
+    <div class="hint">
+      Open any AI chat (ChatGPT, Claude, Gemini…) and click the 🧠 button to inject your memories.
+      Highlight text on any page → right-click → “Remember this”.
+      <a id="dash" href="#" target="_blank">Open dashboard ↗</a>
+    </div>
+  </div>
+  <script src="config.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
