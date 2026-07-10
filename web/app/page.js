@@ -9,7 +9,6 @@ export default function Home() {
   const [category, setCategory] = useState("preference");
   const [pinned, setPinned] = useState(false);
   const [smartAvailable, setSmartAvailable] = useState(false);
-  const [smartLabel, setSmartLabel] = useState("");
   const [capture, setCapture] = useState("");
   const [busy, setBusy] = useState(false);
   const [testQuery, setTestQuery] = useState("");
@@ -22,10 +21,7 @@ export default function Home() {
   }
   useEffect(() => {
     load();
-    fetch("/api/extract").then((r) => r.json()).then((d) => {
-      setSmartAvailable(!!d.available);
-      setSmartLabel(d.label || "");
-    });
+    fetch("/api/extract").then((r) => r.json()).then((d) => setSmartAvailable(!!d.available));
   }, []);
 
   async function add() {
@@ -109,8 +105,8 @@ export default function Home() {
         </div>
 
         <div className="card">
-          <h2>Smart capture {smartAvailable ? <span className="muted">· via {smartLabel}</span> : <span className="muted">· needs OPENAI_API_KEY or ANTHROPIC_API_KEY</span>}</h2>
-          <textarea placeholder="Paste a paragraph or a whole chat — Claude distils it into atomic memories." value={capture} onChange={(e) => setCapture(e.target.value)} disabled={!smartAvailable} />
+          <h2>Smart capture {smartAvailable ? <span className="muted">· via AI</span> : <span className="muted">· needs an AI API key</span>}</h2>
+          <textarea placeholder="Paste a paragraph or a whole chat — AI distils it into atomic memories." value={capture} onChange={(e) => setCapture(e.target.value)} disabled={!smartAvailable} />
           <button style={{ marginTop: 10 }} onClick={smartCapture} disabled={!smartAvailable || busy}>
             {busy ? "Thinking…" : "Extract & save"}
           </button>
