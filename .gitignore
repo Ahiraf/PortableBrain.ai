@@ -1,0 +1,17 @@
+# dependencies / build
+node_modules/
+.next/
+out/
+dist/
+
+# env & secrets — never commit
+.env
+.env.local
+.env*.local
+
+# personal memory store (user data)
+web/data/memories.json
+
+# os / editor
+.DS_Store
+*.log

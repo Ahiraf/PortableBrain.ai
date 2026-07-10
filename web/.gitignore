@@ -1,0 +1,6 @@
+node_modules/
+.next/
+.env
+.env.local
+# Local memory store (personal data — don't commit it)
+data/memories.json
