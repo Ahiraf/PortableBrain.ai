@@ -1,12 +1,27 @@
-// File-backed memory store. One JSON file, no database to set up.
-// Each memory is an atomic fact about the user; the extension retrieves the
-// most relevant ones per AI-chat context and injects them.
+/*
+ * Memory store with two interchangeable backends behind one async API:
+ *
+ *   - Local dev  -> a JSON file (web/data/memories.json). Zero config.
+ *   - Production -> Upstash Redis (serverless-friendly, persistent), used
+ *                   automatically when UPSTASH_REDIS_REST_URL + _TOKEN are set.
+ *
+ * Callers (the API routes) don't know or care which backend is active.
+ */
 import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
+import { Redis } from "@upstash/redis";
 
+const useRedis = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+const REDIS_KEY = "portablebrain:memories";
 const DATA_DIR = path.join(process.cwd(), "data");
 const FILE = path.join(DATA_DIR, "memories.json");
+
+let _redis = null;
+function redis() {
+  if (!_redis) _redis = Redis.fromEnv(); // reads UPSTASH_REDIS_REST_URL/_TOKEN
+  return _redis;
+}
 
 // A small seed so a fresh install demonstrates retrieval immediately.
 const SEED = [
@@ -17,37 +32,44 @@ const SEED = [
   { text: "For data work I use Python with pandas and scikit-learn.", category: "preference", tags: ["stack", "ml"], pinned: false },
 ];
 
-async function ensureFile() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  try {
-    await fs.access(FILE);
-  } catch {
-    const now = Date.now();
-    const seeded = SEED.map((m, i) => ({
-      id: crypto.randomUUID(),
-      text: m.text,
-      category: m.category,
-      tags: m.tags || [],
-      pinned: !!m.pinned,
-      source: "seed",
-      createdAt: now + i,
-    }));
-    await fs.writeFile(FILE, JSON.stringify(seeded, null, 2));
+// ---- low-level backend read/write ----
+async function loadRaw() {
+  if (useRedis) {
+    const data = await redis().get(REDIS_KEY); // Upstash auto-deserializes JSON
+    return Array.isArray(data) ? data : null;
   }
-}
-
-export async function readAll() {
-  await ensureFile();
   try {
     return JSON.parse(await fs.readFile(FILE, "utf8"));
   } catch {
-    return [];
+    return null;
   }
 }
 
-async function writeAll(memories) {
+async function saveRaw(memories) {
+  if (useRedis) {
+    await redis().set(REDIS_KEY, memories);
+    return;
+  }
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(FILE, JSON.stringify(memories, null, 2));
+}
+
+// ---- public API ----
+export async function readAll() {
+  const existing = await loadRaw();
+  if (existing) return existing;
+  const now = Date.now();
+  const seeded = SEED.map((m, i) => ({
+    id: crypto.randomUUID(),
+    text: m.text,
+    category: m.category,
+    tags: m.tags || [],
+    pinned: !!m.pinned,
+    source: "seed",
+    createdAt: now + i,
+  }));
+  await saveRaw(seeded);
+  return seeded;
 }
 
 export async function addMemory({ text, category, tags, pinned, source }) {
@@ -64,7 +86,7 @@ export async function addMemory({ text, category, tags, pinned, source }) {
     createdAt: Date.now(),
   };
   memories.push(mem);
-  await writeAll(memories);
+  await saveRaw(memories);
   return mem;
 }
 
@@ -80,7 +102,7 @@ export async function updateMemory(id, patch) {
   if (i === -1) return null;
   const allowed = ["text", "category", "tags", "pinned"];
   for (const k of allowed) if (k in patch) memories[i][k] = patch[k];
-  await writeAll(memories);
+  await saveRaw(memories);
   return memories[i];
 }
 
@@ -88,6 +110,6 @@ export async function deleteMemory(id) {
   const memories = await readAll();
   const next = memories.filter((m) => m.id !== id);
   const removed = next.length !== memories.length;
-  if (removed) await writeAll(next);
+  if (removed) await saveRaw(next);
   return removed;
 }
